@@ -6,7 +6,7 @@
 
 
 """A class represnting a node in an AVL tree"""
-
+from printree import *
 
 class AVLNode(object):
     """Constructor, you are allowed to add more fields.
@@ -29,28 +29,28 @@ class AVLNode(object):
 
     """changes values of node to non virtual
     """
+
     def set_not_virtual(self):
         virtual_node = AVLNode(None, None)
         self.left = virtual_node
         self.right = virtual_node
         virtual_node.set_parent(self)
         self.height = 0
+        self.size = 1
 
     """returns the key
     
 	@rtype: int or None
 	@returns: the key of self, None if the node is virtual
 	"""
-
     def get_key(self):
         return self.key if self.is_real_node() else None
 
     """returns the value
-
+    
 	@rtype: any
 	@returns: the value of self, None if the node is virtual
 	"""
-
     def get_value(self):
         return self.value if self.is_real_node() else None
 
@@ -204,6 +204,14 @@ A class implementing an AVL tree.
 
 
 class AVLTree(object):
+    def __repr__(self): # no need to understand the implementation of this one
+        if not self.get_root():
+            return "#"
+        out = ""
+        for row in printree(self.root): # need printree.py file
+            out = out + row + "\n"
+        return out
+
     """
 	Constructor, you are allowed to add more fields.  
 
@@ -298,13 +306,15 @@ class AVLTree(object):
 	@rtype: int
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
-
     def delete(self, node: AVLNode):
         physically_deleted = None
         virtual_node = AVLNode(None, None)
         num_of_operations = 0
-        if not node.right.is_real_node() and not node.left.is_real.node():
+        if not node.right.is_real_node() and not node.left.is_real_node():
             physically_deleted = node.parent
+            if node is self.get_root():
+                self.root = None
+                return 0
             if node.parent.left is node:
                 node.parent.left = virtual_node
                 virtual_node.parent = node.parent
@@ -313,6 +323,15 @@ class AVLTree(object):
                 virtual_node.parent = node.parent
         elif not node.right.is_real_node() or not node.left.is_real_node():
             physically_deleted = node.parent
+            if node is self.get_root():
+                if node.right.is_real_node():
+                    self.root = node.right
+                else:
+                    self.root = node.left
+                self.root.set_size(1)
+                self.root.set_height(0)
+                self.root.set_bf(0)
+                return 0
             if node.parent.left is node:
                 if (node.left.is_real_node()):
                     node.parent.left = node.left
@@ -359,7 +378,7 @@ class AVLTree(object):
                 node = node.parent
             else:
                 if node.get_bf() == 2 and (node.left.get_bf() == 1 or node.left.get_bf() == 0):
-                    self.right_rotate(node)
+                    self.right_rotate(node, node.parent)
                     num_of_operations += 1
                 elif node.get_bf() == 2 and node.left.get_bf() == -1:
                     self.left_right_rotate(node)
@@ -368,7 +387,7 @@ class AVLTree(object):
                     self.right_left_rotate(node)
                     num_of_operations += 2
                 elif node.get_bf() == -2 and (node.right.get_bf() == -1 or node.right.get_bf() == 0):
-                    self.left_rotate(node)
+                    self.left_rotate(node, node.parent)
                     num_of_operations += 1
                 node = node.parent
 
@@ -377,18 +396,22 @@ class AVLTree(object):
 	@rtype: list
 	@returns: a sorted list according to key of touples (key, value) representing the data structure
 	"""
-
     def avl_to_array(self):
         result = []
         self._in_order_rec(self.root, result)
         return result
 
+    def _in_order_rec(self, node, arr):
+        if node.is_real_node():
+            self._in_order_rec(node.left, arr)
+            arr.append((node.key, node.value))
+            self._in_order_rec(node.right, arr)
+
     """returns the number of items in dictionary 
-
-	@rtype: int
-	@returns: the number of items in dictionary 
-	"""
-
+    
+    @rtype: int
+    @returns: the number of items in dictionary 
+    """
     def size(self):
         return self.get_root().get_size()
 
@@ -402,7 +425,6 @@ class AVLTree(object):
 	dictionary smaller than node.key, right is an AVLTree representing the keys in the 
 	dictionary larger than node.key.
 	"""
-
     def split(self, node):
         return None
 
@@ -419,7 +441,6 @@ class AVLTree(object):
 	@rtype: int
 	@returns: the absolute value of the difference between the height of the AVL trees joined
 	"""
-
     def join(self, tree, key, val):
         return None
 
@@ -431,7 +452,6 @@ class AVLTree(object):
 	@rtype: int
 	@returns: the rank of node in self
 	"""
-
     def rank(self, node):
         return None
 
@@ -443,7 +463,6 @@ class AVLTree(object):
 	@rtype: int
 	@returns: the item of rank i in self
 	"""
-
     def select(self, i):
         return None
 
@@ -452,7 +471,6 @@ class AVLTree(object):
 	@rtype: AVLNode
 	@returns: the root, None if the dictionary is empty
 	"""
-
     def get_root(self):
         return self.root
 
@@ -461,7 +479,6 @@ class AVLTree(object):
     @param node: the node which is an AVL criminal.
     @returns: the new root after the rotation
     """
-
     def right_rotate(self, node, parent):
         new_root = node.get_left()
         new_root_right = node
@@ -477,6 +494,7 @@ class AVLTree(object):
             parent.set_size(parent.get_left().get_size() + parent.get_right().get_size() + 1)
         else:
             self.root = new_root
+            new_root.parent = None
         node.set_height(1 + max(node.left.get_height(), node.right.get_height()))
         new_root.set_height(1 + max(new_root.left.get_height(), new_root.right.get_height()))
         node.set_size(1 + node.left.get_size() + node.right.get_size())
@@ -490,7 +508,6 @@ class AVLTree(object):
     @param node: the node which is an AVL criminal
     @returns: the new root after the rotation
     """
-
     def left_rotate(self, node, parent):
         new_root = node.get_right()
         new_root_left = node
@@ -506,6 +523,7 @@ class AVLTree(object):
             parent.set_size(parent.get_left().get_size() + parent.get_right().get_size() + 1)
         else:
             self.root = new_root
+            new_root.parent = None
         node.set_height(1 + max(node.left.get_height(), node.right.get_height()))
         new_root.set_height(1 + max(new_root.left.get_height(), new_root.right.get_height()))
         node.set_size(1 + node.left.get_size() + node.right.get_size())
@@ -539,7 +557,6 @@ class AVLTree(object):
     @param node: the node to find the successor of
     @returns: the successor of node
     """
-
     def successor(self, node):
         if node.right.is_real_node:
             curr_node = node.right
@@ -552,13 +569,3 @@ class AVLTree(object):
             parent = node.parent
         return parent
 
-
-    """
-    a helper function for in_order_list
-    """
-
-    def _in_order_rec(self, node, arr):
-        if node.is_real_node():
-            self._in_order_rec(node.left, arr)
-            arr.append((node.key, node.value))
-            self._in_order_rec(node.right, arr)
