@@ -295,7 +295,7 @@ class AVLTree(object):
                     self.right_left_rotate(parent)
                     num_of_operations += 2
                 elif parent.get_bf() == -2 and parent.get_right().get_bf() == -1:
-                    self.left_rotate(parent)
+                    self.left_rotate(parent, parent.get_parent())
                     num_of_operations += 1
                 return num_of_operations
 
