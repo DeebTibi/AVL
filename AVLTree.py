@@ -286,7 +286,7 @@ class AVLTree(object):
                 parent = parent.get_parent()
             else:
                 if parent.get_bf() == 2 and parent.get_left().get_bf() == 1:
-                    self.right_rotate(parent)
+                    self.right_rotate(parent, parent.get_parent())
                     num_of_operations += 1
                 elif parent.get_bf() == 2 and parent.get_left().get_bf() == -1:
                     self.left_right_rotate(parent)
@@ -426,7 +426,22 @@ class AVLTree(object):
 	dictionary larger than node.key.
 	"""
     def split(self, node):
-        return None
+        tr = AVLTree()
+        tr.root = node.get_right()
+        tl = AVLTree()
+        tl.root = node.get_left()
+        while node.get_parent() is not None:
+            if node.get_parent().get_right() is node:
+                to_add = AVLTree()
+                to_add.root = node.get_parent().get_left()
+                to_add.join(tl, node.get_parent().get_key(), node.get_parent().value)
+                tl = to_add
+            elif node.get_parent.get_left() is node:
+                to_add = AVLTree()
+                to_add.root = node.get_parent().get_right()
+                tr.join(to_add, node.get_parent().get_key(), node.get_parent().get_value())
+            node = node.get_parent()
+        return [tl, tr]
 
     """joins self with key and another AVLTree
 
@@ -442,7 +457,53 @@ class AVLTree(object):
 	@returns: the absolute value of the difference between the height of the AVL trees joined
 	"""
     def join(self, tree, key, val):
-        return None
+        res = abs(self.get_root().get_height() - tree.get_root().get_height())
+        joint_root = AVLNode(key, val)
+        node = tree.get_root()
+        while node.get_height() > self.get_root().get_height():
+            node = node.get_left()
+        joint_root.left = self.get_root()
+        joint_root.right = node
+        joint_root.get_left().set_parent(joint_root)
+        joint_root.set_parent(node.get_parent())
+        joint_root.get_right().set_parent(joint_root)
+        if joint_root.get_parent() is not None:
+            joint_root.get_parent().set_left(joint_root)
+        node.set_parent(joint_root)
+        joint_root.set_size(joint_root.get_left().get_size() + joint_root.get_right().get_size() + 1)
+        joint_root.set_height(max(joint_root.get_left().get_height(), joint_root.get_right().get_height()) + 1)
+        joint_root.set_bf(joint_root.get_left().get_height() - joint_root.get_right().get_height())
+        self.root = joint_root
+        node = joint_root.get_parent()
+        while node is not None:
+            self.root = node
+            tr_height = node.get_right().get_height()
+            tl_height = node.get_left().get_height()
+            tr_size = node.get_right().get_size()
+            tl_size = node.get_left().get_size()
+            node.set_size(tr_size + tl_size + 1)
+            node.set_bf(tl_height - tr_height)
+            new_height = max(tl_height, tr_height) + 1
+            if abs(node.get_bf()) < 2 and new_height == node.get_height():
+                node.set_height(max(tl_height, tr_height) + 1)
+                node = node.get_parent()
+            elif abs(node.get_bf()) < 2 and new_height != node.get_height():
+                node.set_height(new_height)
+                node = node.get_parent()
+            else:
+                if node.get_bf() == 2 and (node.left.get_bf() == 1 or node.left.get_bf() == 0):
+                    self.right_rotate(node, node.parent)
+                elif node.get_bf() == 2 and node.left.get_bf() == -1:
+                    self.left_right_rotate(node)
+                elif node.get_bf() == -2 and node.right.get_bf() == 1:
+                    self.right_left_rotate(node)
+                elif node.get_bf() == -2 and (node.right.get_bf() == -1 or node.right.get_bf() == 0):
+                    self.left_rotate(node, node.parent)
+                node = node.parent
+
+        return res
+
+
 
     """compute the rank of node in the self
 
