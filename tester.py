@@ -11,7 +11,3 @@ tree.insert(8,"")
 
 
 print(f"ORIGINAL TREE: \n {tree}")
-
-
-
-

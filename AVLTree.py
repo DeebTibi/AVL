@@ -398,14 +398,14 @@ class AVLTree(object):
 	"""
     def avl_to_array(self):
         result = []
-        self._in_order_rec(self.root, result)
+        self.__in_order_rec(self.root, result)
         return result
 
-    def _in_order_rec(self, node, arr):
+    def __in_order_rec(self, node, arr):
         if node.is_real_node():
-            self._in_order_rec(node.left, arr)
+            self.__in_order_rec(node.left, arr)
             arr.append((node.key, node.value))
-            self._in_order_rec(node.right, arr)
+            self.__in_order_rec(node.right, arr)
 
     """returns the number of items in dictionary 
     
@@ -560,7 +560,14 @@ class AVLTree(object):
 	@returns: the rank of node in self
 	"""
     def rank(self, node):
-        return None
+        less_eq = node.get_left().get_size() + 1
+        while node.get_parent() is not None:
+            if node.get_parent().get_right() is node:
+                less_eq += (node.get_parent().get_left().get_size() + 1)
+            node = node.get_parent()
+        return less_eq
+
+
 
     """finds the i'th smallest item (according to keys) in self
 
@@ -571,7 +578,17 @@ class AVLTree(object):
 	@returns: the item of rank i in self
 	"""
     def select(self, i):
-        return None
+        n = self.get_root()
+        r = n.get_left().get_size() + 1
+        while True:
+            if r > i:
+                n = n.get_left()
+            elif r == i:
+                return n
+            else:
+                n = n.get_right()
+                i = i - r
+            r = n.get_left().get_size() + 1
 
     """returns the root of the tree representing the dictionary
 
