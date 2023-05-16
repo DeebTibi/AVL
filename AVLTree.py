@@ -457,39 +457,83 @@ class AVLTree(object):
 	@returns: the absolute value of the difference between the height of the AVL trees joined
 	"""
     def join(self, tree, key, val):
-        res = abs(self.get_root().get_height() - tree.get_root().get_height())
-        joint_root = AVLNode(key, val)
-        node = tree.get_root()
-        while node.get_height() > self.get_root().get_height():
-            node = node.get_left()
-        joint_root.left = self.get_root()
-        joint_root.right = node
-        joint_root.get_left().set_parent(joint_root)
-        joint_root.set_parent(node.get_parent())
-        joint_root.get_right().set_parent(joint_root)
-        if joint_root.get_parent() is not None:
-            joint_root.get_parent().set_left(joint_root)
-        node.set_parent(joint_root)
-        joint_root.set_size(joint_root.get_left().get_size() + joint_root.get_right().get_size() + 1)
-        joint_root.set_height(max(joint_root.get_left().get_height(), joint_root.get_right().get_height()) + 1)
-        joint_root.set_bf(joint_root.get_left().get_height() - joint_root.get_right().get_height())
-        self.root = joint_root
-        node = joint_root.get_parent()
+        left_right_height_diff = self.get_root().get_height() - tree.get_root().get_height()
+        new_root = AVLNode(key, val)
+        node = None
+        if left_right_height_diff > 1:
+            # Traverse down the left tree until difference is not greater than zero
+            node = self.get_root()
+            if self.get_root().get_key() < key:
+                while node.get_height() > tree.get_root().get_height():
+                    node = node.get_right()
+                node.get_parent().set_right(new_root)
+                new_root.set_parent(node.get_parent())
+                node.set_parent(new_root)
+                new_root.set_left(node)
+
+                new_root.set_right(tree.get_root())
+                tree.get_root().set_parent(new_root)
+            else:
+                while node.get_height() > tree.get_root().get_height():
+                    node = node.get_left()
+                node.get_parent().set_left(new_root)
+                new_root.set_parent(node.get_parent())
+                node.set_parent(new_root)
+                new_root.set_right(node)
+
+                new_root.set_left(tree.get_root())
+                tree.get_root().set_parent(new_root)
+        elif left_right_height_diff < -1:
+            # Traverse down the right tree until the difference is -1 or 0
+            node = tree.get_root()
+            if tree.get_root().get_key() < key:
+                while node.get_height() > self.get_root().get_height():
+                    node = node.get_right()
+                node.get_parent().set_right(new_root)
+                new_root.set_parent(node.get_parent())
+                node.set_parent(new_root)
+                new_root.set_left(node)
+
+                new_root.set_right(self.get_root())
+                self.get_root().set_parent(new_root)
+            else:
+                while node.get_height() > self.get_root().get_height():
+                    node = node.get_left()
+                node.get_parent().set_left(new_root)
+                new_root.set_parent(node.get_parent())
+                node.set_parent(new_root)
+                new_root.set_right(node)
+
+                new_root.set_left(self.get_root())
+                self.get_root().set_parent(new_root)
+        else:
+            if tree.get_root().get_key() < key:
+                new_root.set_left(tree.get_root())
+                tree.get_root().set_parent(new_root)
+                new_root.set_right(self.get_root())
+                self.get_root().set_parent(new_root)
+            else:
+                new_root.set_right(tree.get_root())
+                tree.get_root().set_parent(new_root)
+                new_root.set_left(self.get_root())
+                self.get_root().set_parent(new_root)
+
+
+        # Now we connected the trio and we just traverse up fixing AVL criminals
+        self.root = new_root
+        self.root.set_bf(new_root.get_left().get_height() - new_root.get_right().get_height())
+        self.root.set_height(max(new_root.get_left().get_height(), new_root.get_right().get_height()) + 1)
+        self.root.set_size(self.get_root().get_size() + tree.get_root().get_size() + 1)
+        node = self.root.get_parent()
+
         while node is not None:
-            self.root = node
-            tr_height = node.get_right().get_height()
-            tl_height = node.get_left().get_height()
-            tr_size = node.get_right().get_size()
-            tl_size = node.get_left().get_size()
-            node.set_size(tr_size + tl_size + 1)
-            node.set_bf(tl_height - tr_height)
-            new_height = max(tl_height, tr_height) + 1
-            if abs(node.get_bf()) < 2 and new_height == node.get_height():
-                node.set_height(max(tl_height, tr_height) + 1)
-                node = node.get_parent()
-            elif abs(node.get_bf()) < 2 and new_height != node.get_height():
+            new_height = max(node.left.height, node.right.height) + 1
+            new_bf = node.left.get_height() - node.right.get_height()
+            new_size = node.left.size + node.right.size + 1
+            node.set_size(new_size)
+            node.set_bf(new_bf)
+            if abs(new_bf) < 2 and new_height != node.height:
                 node.set_height(new_height)
-                node = node.get_parent()
             else:
                 if node.get_bf() == 2 and (node.left.get_bf() == 1 or node.left.get_bf() == 0):
                     self.right_rotate(node, node.parent)
@@ -499,9 +543,11 @@ class AVLTree(object):
                     self.right_left_rotate(node)
                 elif node.get_bf() == -2 and (node.right.get_bf() == -1 or node.right.get_bf() == 0):
                     self.left_rotate(node, node.parent)
-                node = node.parent
+            self.root = node
+            node = node.parent
 
-        return res
+
+        return abs(left_right_height_diff)
 
 
 
@@ -545,6 +591,7 @@ class AVLTree(object):
         new_root_right = node
         new_root_right.set_parent(new_root)
         new_root_right.set_left(new_root.get_right())
+        new_root_right.get_left().set_parent(new_root_right)
         new_root.set_right(new_root_right)
         if parent:
             new_root.set_parent(parent)
@@ -574,6 +621,7 @@ class AVLTree(object):
         new_root_left = node
         new_root_left.set_parent(new_root)
         new_root_left.set_right(new_root.get_left())
+        new_root_left.get_right().set_parent(new_root_left)
         new_root.set_left(new_root_left)
         if parent:
             new_root.set_parent(parent)
