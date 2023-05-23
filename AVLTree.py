@@ -31,10 +31,12 @@ class AVLNode(object):
     """
 
     def set_not_virtual(self):
-        virtual_node = AVLNode(None, None)
-        self.left = virtual_node
-        self.right = virtual_node
-        virtual_node.set_parent(self)
+        virtual_node_1 = AVLNode(None, None)
+        virtual_node_2 = AVLNode(None, None)
+        self.left = virtual_node_1
+        self.right = virtual_node_2
+        virtual_node_1.set_parent(self)
+        virtual_node_2.set_parent(self)
         self.height = 0
         self.size = 1
 
@@ -223,6 +225,7 @@ class AVLTree(object):
     # add your fields here
 
     """searches for a node in the dictionary corresponding to the key
+    Time Complexity - O(log(n))
 
 	@type key: int
 	@param key: a key to be searched
@@ -242,7 +245,7 @@ class AVLTree(object):
         return None
 
     """inserts val at position i in the dictionary
-
+    Time Complexity - O(log(n))
 	@type key: int
 	@pre: key currently does not appear in the dictionary
 	@param key: key of item that is to be inserted to self
@@ -258,7 +261,7 @@ class AVLTree(object):
         inserted_node.set_not_virtual()
         if not self.root:
             self.root = inserted_node
-            return 0
+            return num_of_operations
         parent = self.root
         # insertion
         while parent.is_real_node():
@@ -300,7 +303,7 @@ class AVLTree(object):
                 return num_of_operations
 
     """deletes node from the dictionary
-
+    Time Complexity - O(log(n))
 	@type node: AVLNode
 	@pre: node is a real pointer to a node in self
 	@rtype: int
@@ -392,7 +395,7 @@ class AVLTree(object):
                 node = node.parent
 
     """returns an array representing dictionary 
-
+    Time Complexity - O(n)
 	@rtype: list
 	@returns: a sorted list according to key of touples (key, value) representing the data structure
 	"""
@@ -408,7 +411,7 @@ class AVLTree(object):
             self.__in_order_rec(node.right, arr)
 
     """returns the number of items in dictionary 
-    
+    Time Complexity - O(1)
     @rtype: int
     @returns: the number of items in dictionary 
     """
@@ -416,7 +419,7 @@ class AVLTree(object):
         return self.get_root().get_size()
 
     """splits the dictionary at a given node
-
+    Time Complexity - O(log(n))
 	@type node: AVLNode
 	@pre: node is in self
 	@param node: The intended node in the dictionary according to whom we split
@@ -426,25 +429,26 @@ class AVLTree(object):
 	dictionary larger than node.key.
 	"""
     def split(self, node):
+        join_cost = 0
         tr = AVLTree()
         tr.root = node.get_right()
         tl = AVLTree()
         tl.root = node.get_left()
         while node.get_parent() is not None:
+            tmp = node.get_parent()
             if node.get_parent().get_right() is node:
                 to_add = AVLTree()
                 to_add.root = node.get_parent().get_left()
-                to_add.join(tl, node.get_parent().get_key(), node.get_parent().value)
-                tl = to_add
-            elif node.get_parent.get_left() is node:
+                join_cost += tl.join(to_add, node.get_parent().get_key(), node.get_parent().value)
+            elif node.get_parent().get_left() is node:
                 to_add = AVLTree()
                 to_add.root = node.get_parent().get_right()
-                tr.join(to_add, node.get_parent().get_key(), node.get_parent().get_value())
-            node = node.get_parent()
-        return [tl, tr]
+                join_cost += tr.join(to_add, node.get_parent().get_key(), node.get_parent().get_value())
+            node = tmp
+        return [tl, tr], join_cost
 
     """joins self with key and another AVLTree
-
+    Time Complexity - O(log(n))
 	@type tree: AVLTree 
 	@param tree: a dictionary to be joined with self
 	@type key: int 
@@ -459,6 +463,17 @@ class AVLTree(object):
     def join(self, tree, key, val):
         left_right_height_diff = self.get_root().get_height() - tree.get_root().get_height()
         new_root = AVLNode(key, val)
+        if not tree.get_root().is_real_node() or not self.get_root().is_real_node():
+            if (not tree.get_root().is_real_node() or tree.get_root() is None) and (not self.get_root().is_real_node() or self.get_root() is None):
+                self.insert(key, val)
+                return abs(left_right_height_diff)
+            if (not tree.get_root().is_real_node() or tree.get_root() is None):
+                self.insert(key,val)
+                return abs(left_right_height_diff)
+            if (not self.get_root().is_real_node() or self.get_root() is None):
+                self = tree
+                tree.insert(key,val)
+                return abs(left_right_height_diff)
         node = None
         if left_right_height_diff > 1:
             # Traverse down the left tree until difference is not greater than zero
@@ -552,7 +567,7 @@ class AVLTree(object):
 
 
     """compute the rank of node in the self
-
+    Time Complexity - O(log(n))
 	@type node: AVLNode
 	@pre: node is in self
 	@param node: a node in the dictionary which we want to compute its rank
@@ -570,7 +585,7 @@ class AVLTree(object):
 
 
     """finds the i'th smallest item (according to keys) in self
-
+    Time Complexity - O(log(n))
 	@type i: int
 	@pre: 1 <= i <= self.size()
 	@param i: the rank to be selected in self
@@ -591,7 +606,7 @@ class AVLTree(object):
             r = n.get_left().get_size() + 1
 
     """returns the root of the tree representing the dictionary
-
+    Time Complexity - O(1)
 	@rtype: AVLNode
 	@returns: the root, None if the dictionary is empty
 	"""
@@ -610,6 +625,12 @@ class AVLTree(object):
         new_root_right.set_left(new_root.get_right())
         new_root_right.get_left().set_parent(new_root_right)
         new_root.set_right(new_root_right)
+        node.set_height(1 + max(node.left.get_height(), node.right.get_height()))
+        new_root.set_height(1 + max(new_root.left.get_height(), new_root.right.get_height()))
+        node.set_size(1 + node.left.get_size() + node.right.get_size())
+        new_root.set_size(1 + new_root.left.get_size() + new_root.right.get_size())
+        node.set_bf(node.left.get_height() - node.right.get_height())
+        new_root.set_bf(new_root.left.get_height() - new_root.right.get_height())
         if parent:
             new_root.set_parent(parent)
             parent.left = parent.left if parent.left is not node else new_root
@@ -620,12 +641,6 @@ class AVLTree(object):
         else:
             self.root = new_root
             new_root.parent = None
-        node.set_height(1 + max(node.left.get_height(), node.right.get_height()))
-        new_root.set_height(1 + max(new_root.left.get_height(), new_root.right.get_height()))
-        node.set_size(1 + node.left.get_size() + node.right.get_size())
-        new_root.set_size(1 + new_root.left.get_size() + new_root.right.get_size())
-        node.set_bf(node.left.get_height() - node.right.get_height())
-        new_root.set_bf(new_root.left.get_height() - new_root.right.get_height())
         return new_root
 
     """ performs a left rotation on a triplet of nodes
@@ -640,6 +655,13 @@ class AVLTree(object):
         new_root_left.set_right(new_root.get_left())
         new_root_left.get_right().set_parent(new_root_left)
         new_root.set_left(new_root_left)
+        new_root.get_parent().set_parent(new_root)
+        node.set_height(1 + max(node.left.get_height(), node.right.get_height()))
+        new_root.set_height(1 + max(new_root.left.get_height(), new_root.right.get_height()))
+        node.set_size(1 + node.left.get_size() + node.right.get_size())
+        new_root.set_size(1 + new_root.left.get_size() + new_root.right.get_size())
+        node.set_bf(node.left.get_height() - node.right.get_height())
+        new_root.set_bf(new_root.left.get_height() - new_root.right.get_height())
         if parent:
             new_root.set_parent(parent)
             parent.left = parent.left if parent.left is not node else new_root
@@ -650,12 +672,6 @@ class AVLTree(object):
         else:
             self.root = new_root
             new_root.parent = None
-        node.set_height(1 + max(node.left.get_height(), node.right.get_height()))
-        new_root.set_height(1 + max(new_root.left.get_height(), new_root.right.get_height()))
-        node.set_size(1 + node.left.get_size() + node.right.get_size())
-        new_root.set_size(1 + new_root.left.get_size() + new_root.right.get_size())
-        node.set_bf(node.left.get_height() - node.right.get_height())
-        new_root.set_bf(new_root.left.get_height() - new_root.right.get_height())
         return new_root
 
     """ performs a left rotation and then right rotation
