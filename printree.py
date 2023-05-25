@@ -13,10 +13,10 @@ def printree(t, bykey=True):
 def trepr(t, bykey=False):
     """Return a list of textual representations of the levels in t
     bykey=True: show keys instead of values"""
-    if not t.is_real_node():
+    if not t:
         return ["#"]
 
-    thistr = str(t.key) if bykey else str(t.val)
+    thistr = str(t.key)  + " " + str(t.size) if bykey else str(t.val)
 
     return conc(trepr(t.left, bykey), thistr, trepr(t.right, bykey))
 
